@@ -5,10 +5,10 @@ import torch.nn as nn
 import torchaudio.transforms as transforms
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
-from utils import TextTransform
+# from utils import TextTransform
 
 class LogMelSpec(nn.Module):
-    def __init__(self, sample_rate=16000, n_mels=128, win_length=400, hop_length=160, n_fft=1024):
+    def __init__(self, sample_rate=16000, n_mels=80, win_length=400, hop_length=160, n_fft=512):
         super(LogMelSpec, self).__init__()
         self.transform = transforms.MelSpectrogram(sample_rate=sample_rate, 
                                                    n_mels=n_mels,
@@ -18,11 +18,11 @@ class LogMelSpec(nn.Module):
 
     def forward(self, x):
         x = self.transform(x)
-        x = torch.log(x + 1e-14)  # logarithmic, add small value to avoid inf
+        # x = torch.log(x + 1e-14)  # logarithmic, add small value to avoid inf
         return x
 
 
-def get_featurizer(sample_rate=16000, n_mels=128, win_length=400, hop_length=160, n_fft=1024):
+def get_featurizer(sample_rate=16000, n_mels=80, win_length=400, hop_length=160, n_fft=512):
     return LogMelSpec(sample_rate=sample_rate, 
                       n_mels=n_mels,
                       win_length=win_length,
@@ -41,11 +41,10 @@ class CustomAudioDataset(Dataset):
                 LogMelSpec()
             )
         else:
-            time_masks = [torchaudio.transforms.TimeMasking(time_mask_param=15, p=0.05) for _ in range(10)]
             self.audio_transforms = nn.Sequential(
                 LogMelSpec(),
-                transforms.FrequencyMasking(freq_mask_param=25),
-                *time_masks,
+                torchaudio.transforms.FrequencyMasking(freq_mask_param=15),
+                torchaudio.transforms.TimeMasking(time_mask_param=35)
             )
 
     def __len__(self):
@@ -73,9 +72,7 @@ class CustomAudioDataset(Dataset):
             if self.log_ex:
                 print(f"{str(e)}\r", end='')
             return self.__getitem__(idx - 1 if idx != 0 else idx + 1)
-        
-    def describe(self):
-        return self.data.describe()
+
 
 class SpeechDataModule(pl.LightningDataModule):
     def __init__(self, batch_size, train_url, test_url, num_workers):
