@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from dataset import SpeechDataModule
-from model import SpeechRecognition
+from model import SpeechRecognitionModel
 from utils import GreedyDecoder
 
 
@@ -47,30 +47,26 @@ class ASRTrainer(pl.LightningModule):
             lr=self.args.learning_rate,
             betas=(0.9, 0.98),
             eps=1e-9,
-            weight_decay=1e-6
+            weight_decay=1e-5
         )
 
         scheduler = {
-            'scheduler': optim.lr_scheduler.OneCycleLR(
+            'scheduler': optim.lr_scheduler.CosineAnnealingWarmRestarts(
                 optimizer,
-                max_lr=self.args.learning_rate,
-                steps_per_epoch=self.trainer.estimated_stepping_batches,
-                epochs=self.args.epochs,
-                anneal_strategy='linear'
+                T_0=5,          # Number of epochs for the first restart
+                T_mult=2,       # Factor to increase T_0 after each restart
+                eta_min=3e-5    # Minimum learning rate
             ),
             'monitor': 'val_loss'
         }
 
         return [optimizer], [scheduler]
     
-    def _common_step(self, batch):
+    def _common_step(self, batch, batch_idx):
         spectrograms, labels, input_lengths, label_lengths = batch
-        bs = spectrograms.shape[0]
-        hidden = self.model._init_hidden(bs)
-        hn, c0 = hidden[0].to(self.device), hidden[1].to(self.device)
-        output, _ = self(spectrograms, (hn, c0))
+        output= self.model(spectrograms)        # (batch, time, n_class)
         output = F.log_softmax(output, dim=2)
-        
+        output = output.transpose(0, 1)         # (time, batch, n_class)
         loss = self.loss_fn(output, labels, input_lengths, label_lengths)
         return loss, output, labels, label_lengths
     
@@ -147,27 +143,31 @@ def main(args):
     data_module.setup()
 
     h_params = {
-        "n_cnn_layers": 3,
-        "n_rnn_layers": 5,
+        "n_cnn_layers": 2,
+        "n_rnn_layers": 3,
         "rnn_dim": 512,
         "n_class": 29,
-        "n_feats": 128,
+        "n_feats": 80,
         "stride": 2,
         "dropout": 0.1,
     } 
-    model = SpeechRecognition(**h_params)
+    
+    model = SpeechRecognitionModel(**h_params)
     speech_trainer = ASRTrainer(model=model, 
                                 args=args)
 
     # NOTE: Comet Logger
     comet_logger = CometLogger(api_key=os.getenv('API_KEY'),
-                               project_name=os.getenv('PROJECT_NAME'))
+                               project_name=os.getenv('PROJECT_NAME'),
+                               workspace=os.environ.get("COMET_WORKSPACE"),
+                               save_dir=".",
+                               )
 
     # NOTE: Define Trainer callbacks
     checkpoint_callback = ModelCheckpoint(
         monitor='val_loss',
         dirpath="./saved_checkpoint/",
-        filename='ASR-conformer-{epoch:02d}-{val_loss:.2f}',
+        filename='ASR-conformer-{epoch:02d}-{val_loss:.2f}-{val_wer:.2f}',
         save_top_k=3,        # 3 Checkpoints
         mode='min'
     )
@@ -211,11 +211,8 @@ if __name__ == "__main__":
     # General Train Hyperparameters
     parser.add_argument('--epochs', default=50, type=int, help='number of total epochs to run')
     parser.add_argument('--batch_size', default=32, type=int, help='size of batch')
-    parser.add_argument('-lr', '--learning_rate', default=5e-4, type=float, help='learning rate')
+    parser.add_argument('-lr', '--learning_rate', default=3e-5, type=float, help='learning rate')
     parser.add_argument('--precision', default='16-mixed', type=str, help='precision')
-
-    # Params
-    parser.add_argument('--steps', default=10000, type=int, help='val every n steps')
 
     # Checkpoint path
     parser.add_argument('--checkpoint_path', default=None, type=str, help='path to a checkpoint file to load and resume training')
