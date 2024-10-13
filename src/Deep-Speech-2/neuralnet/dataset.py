@@ -5,7 +5,7 @@ import torch.nn as nn
 import torchaudio.transforms as transforms
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
-# from utils import TextTransform
+from utils import TextTransform
 
 class LogMelSpec(nn.Module):
     def __init__(self, sample_rate=16000, n_mels=80, win_length=400, hop_length=160, n_fft=512):
