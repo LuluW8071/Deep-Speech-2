@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from dataset import SpeechDataModule
-from model import SpeechRecognitionModel
+from model import SpeechRecognitionModel, SpeechRecognition_minGRUModel
 from utils import GreedyDecoder
 
 
@@ -44,18 +44,15 @@ class ASRTrainer(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = optim.AdamW(
             self.model.parameters(),
-            lr=self.args.learning_rate,
-            betas=(0.9, 0.98),
-            eps=1e-9,
-            weight_decay=1e-5
+            lr=self.args.learning_rate
         )
 
         scheduler = {
             'scheduler': optim.lr_scheduler.CosineAnnealingWarmRestarts(
                 optimizer,
-                T_0=5,          # Number of epochs for the first restart
-                T_mult=2,       # Factor to increase T_0 after each restart
-                eta_min=3e-5    # Minimum learning rate
+                T_0=10,          # Number of epochs for the first restart
+                T_mult=2,        # Factor to increase T_0 after each restart
+                eta_min=3e-5     # Minimum learning rate
             ),
             'monitor': 'val_loss'
         }
@@ -64,7 +61,7 @@ class ASRTrainer(pl.LightningModule):
     
     def _common_step(self, batch, batch_idx):
         spectrograms, labels, input_lengths, label_lengths = batch
-        output= self.model(spectrograms)        # (batch, time, n_class)
+        output = self.model(spectrograms)        # (batch, time, n_class)
         output = F.log_softmax(output, dim=2)
         output = output.transpose(0, 1)         # (time, batch, n_class)
         loss = self.loss_fn(output, labels, input_lengths, label_lengths)
@@ -85,16 +82,16 @@ class ASRTrainer(pl.LightningModule):
         decoded_preds, decoded_targets = GreedyDecoder(y_pred.transpose(0, 1), labels, label_lengths)
         
         # Log final predictions
-        if batch_idx % 5 == 0:
+        if batch_idx % 15 == 0:
             log_targets = decoded_targets[-1]
             log_preds = {"Preds": decoded_preds[-1]}
             self.logger.experiment.log_text(text=log_targets, metadata=log_preds)
 
         # Calculate metrics
-        cer_batch = self.char_error_rate(decoded_preds, decoded_targets)
+        # cer_batch = self.char_error_rate(decoded_preds, decoded_targets)
         wer_batch = self.word_error_rate(decoded_preds, decoded_targets)
         
-        self.val_cer.append(cer_batch)
+        # self.val_cer.append(cer_batch)
         self.val_wer.append(wer_batch)
 
         return {'val_loss': loss}
@@ -103,13 +100,13 @@ class ASRTrainer(pl.LightningModule):
     def on_validation_epoch_end(self):
         # Calculate averages of metrics over the entire epoch
         avg_loss = torch.stack(self.losses).mean()
-        avg_cer = torch.stack(self.val_cer).mean()
+        # avg_cer = torch.stack(self.val_cer).mean()
         avg_wer = torch.stack(self.val_wer).mean()
 
         # Log all metrics using log_dict
         metrics = {
             'val_loss': avg_loss,
-            'val_cer': avg_cer,
+            # 'val_cer': avg_cer,
             'val_wer': avg_wer
         }
 
@@ -118,7 +115,7 @@ class ASRTrainer(pl.LightningModule):
         # Clear the lists for the next epoch
         self.losses.clear()
         self.val_wer.clear()
-        self.val_cer.clear()
+        # self.val_cer.clear()
 
 
 def main(args):
@@ -143,8 +140,8 @@ def main(args):
     data_module.setup()
 
     h_params = {
-        "n_cnn_layers": 3,
-        "n_rnn_layers": 5,
+        "n_cnn_layers": 2,
+        "n_rnn_layers": 3,
         "rnn_dim": 512,
         "n_class": 29,
         "n_feats": 80,
@@ -152,22 +149,20 @@ def main(args):
         "dropout": 0.1,
     } 
     
-    model = SpeechRecognitionModel(**h_params)
+    model = SpeechRecognitionModel(**h_params) if args.model_type.lower() == "gru" else SpeechRecognition_minGRUModel(**h_params)
+
     speech_trainer = ASRTrainer(model=model, 
                                 args=args)
 
     # NOTE: Comet Logger
     comet_logger = CometLogger(api_key=os.getenv('API_KEY'),
-                               project_name=os.getenv('PROJECT_NAME'),
-                               workspace=os.environ.get("COMET_WORKSPACE"),
-                               save_dir=".",
-                               )
+                               project_name=os.getenv('PROJECT_NAME'))
 
     # NOTE: Define Trainer callbacks
     checkpoint_callback = ModelCheckpoint(
         monitor='val_loss',
         dirpath="./saved_checkpoint/",
-        filename='DeepSpeech2-{epoch:02d}-{val_loss:.2f}-{val_wer:.2f}',
+        filename='model-{epoch:02d}-{val_wer:.2f}',
         save_top_k=3,        # 3 Checkpoints
         mode='min'
     )
@@ -182,7 +177,7 @@ def main(args):
         'check_val_every_n_epoch': 1, 
         'gradient_clip_val': 1.0,
         'callbacks': [LearningRateMonitor(logging_interval='epoch'),
-                      EarlyStopping(monitor="val_loss"), 
+                      EarlyStopping(monitor="val_loss", patience=5),
                       checkpoint_callback],
         'logger': comet_logger
     }
