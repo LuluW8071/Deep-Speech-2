@@ -1,4 +1,4 @@
-# Deep Speech 2: End-to-End Speech Recognition
+## Deep Speech 2 with Parallel MinGRU Implementation
 
 <div align="center">
 
@@ -6,7 +6,24 @@
 
 </div>
 
-This repository contains an implementation of the paper [Deep Speech 2: End-to-End Speech Recognition](https://arxiv.org/abs/1512.02595) using [Lightning AI :zap:](https://www.pytorchlightning.ai/). Deep Speech 2 was a state-of-the-art automatic speech recognition (ASR) model designed to transcribe speech into text with end-to-end training using deep learning techniques in 2015.
+This repository contains an implementation of the paper __Deep Speech 2: End-to-End Speech Recognition__ and newly proposed __parallel minGRU__ architecture from __Were RNNs All We Needed?__ using __PyTorch :fire:__ and __Lightning AI :zap:__. 
+
+## 📜 Paper & Blogs Review 
+
+- [x] [Gated Recurrent Neural Networks](https://arxiv.org/pdf/1412.3555)
+- [x] [Deep Speech 2: End-to-End Speech Recognition](https://arxiv.org/abs/1512.02595)
+- [x] [Were RNNs All We Needed?](https://arxiv.org/pdf/2410.01201)
+- [x] [KenLM](https://kheafield.com/code/kenlm/)
+- [x] [Boosting Sequence Generation Performance with Beam Search Language Model Decoding](https://towardsdatascience.com/boosting-your-sequence-generation-performance-with-beam-search-language-model-decoding-74ee64de435a)
+
+
+## 📖 Introduction
+
+__Deep Speech 2__ was a state-of-the-art ASR model designed to transcribe speech into text with end-to-end training using deep learning techniques in 2015.
+
+On the other hand, **Were RNNs All We Needed?** introduces a new RNN-based architecture with a __parallelized version__ of the __minGRU__ (Minimum Gated Recurrent Unit), aiming to enhance the efficiency of RNNs by reducing the dependency on sequential data processing. This architecture enables faster training and inference, making it potentially more suitable for ASR tasks and other real-time applications.
+
+--- 
 
 ## Installation
 
@@ -22,10 +39,6 @@ This repository contains an implementation of the paper [Deep Speech 2: End-to-E
    ```
 
    Ensure you have `PyTorch` and `Lightning AI` installed.
-
-## Dataset
-
-This implementation supports [__LibriSpeech__](http://www.openslr.org/12/). The datasets are automatically downloaded and preprocessed during training.
 
 ## Usage
 
@@ -81,9 +94,9 @@ python inference.py --audio path_to_audio.wav --checkpoint path_to_checkpoint.ck
 
 <!-- This will transcribe the audio file and return the predicted text. -->
 
-## Model Architecture
+<!-- ## Model Architecture
 
-![Deep Speech 2 Architecture](https://velog.velcdn.com/images/pass120/post/5b167fc2-1d24-4b91-8d91-5baef1b6a541/image.png)
+![Deep Speech 2 Architecture](https://velog.velcdn.com/images/pass120/post/5b167fc2-1d24-4b91-8d91-5baef1b6a541/image.png) -->
 
 <!-- ## Results
 
@@ -91,10 +104,26 @@ python inference.py --audio path_to_audio.wav --checkpoint path_to_checkpoint.ck
 |---------------|------|------|
 | LibriSpeech   | 5.3% | 2.8% | -->
 
-## References
+## Citations
 
-- [Deep Speech 2: End-to-End Speech Recognition in English and Mandarin](https://arxiv.org/abs/1512.02595)
-<!-- - [Sequnce Modelling with CTC](https://distill.pub/2017/ctc/) -->
-- [KenLM](https://kheafield.com/code/kenlm/)
-- [PyTorch TorchAudio Documentation](https://pytorch.org/audio/stable/index.html)
+```bibtex
+@misc{amodei2015deepspeech2endtoend,
+      title={Deep Speech 2: End-to-End Speech Recognition in English and Mandarin}, 
+      author={Dario Amodei and Rishita Anubhai and Eric Battenberg and Carl Case and others,
+      year={2015},
+      eprint={1512.02595},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/1512.02595}, 
+}
+```
+
+```bibtex
+@inproceedings{Feng2024WereRA,
+    title   = {Were RNNs All We Needed?},
+    author  = {Leo Feng and Frederick Tung and Mohamed Osama Ahmed and Yoshua Bengio and Hossein Hajimirsadegh},
+    year    = {2024},
+    url     = {https://api.semanticscholar.org/CorpusID:273025630}
+}
+```
 
