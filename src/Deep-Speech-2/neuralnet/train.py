@@ -204,6 +204,7 @@ if __name__ == "__main__":
                         help='which distributed backend to use for aggregating multi-gpu train')
 
     # General Train Hyperparameters
+    parser.add_argument('--model_type', default=None, type=str, help='model type: gru or mingru')
     parser.add_argument('--epochs', default=50, type=int, help='number of total epochs to run')
     parser.add_argument('--batch_size', default=32, type=int, help='size of batch')
     parser.add_argument('-lr', '--learning_rate', default=1e-5, type=float, help='learning rate')
