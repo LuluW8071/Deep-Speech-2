@@ -63,7 +63,7 @@ Refer to the provided table to change hyperparameters and train configurations.
 | `-db, --dist_backend`           | Distributed backend to use for training                             | ddp_find_unused_parameters_true  |
 | `--epochs`             | Number of total epochs to run                                         | 50                 |
 | `--batch_size`         | Size of the batch                                                     | 32                |
-| `-lr, --learning_rate`      | Learning rate                                                         | 1e-5  (0.00001)      |
+| `-lr, --learning_rate`      | Learning rate                                                         | 2e-4  (0.0002)      | 
 | `--checkpoint_path` | Checkpoint path to resume training from                                 | None |
 | `--precision`        | Precision of the training                                              | 16-mixed |
 
@@ -79,30 +79,13 @@ python3 train.py
 --checkpoint_path path_to_checkpoint.ckpt    # Checkpoint path to resume training from
 ```
 
+## Results
 
-<!-- ### Evaluation
+The model was trained on __LibriSpeech__ train set (100 + 360 + 500 hours) and validated on the __LibriSpeech__ test set ( ~ 10.5 hours).
 
-This will output the Word Error Rate (WER) and Character Error Rate (CER). -->
-
-<!-- ### Inference
-
-For performing inference on new audio samples:
-
-```bash
-python inference.py --audio path_to_audio.wav --checkpoint path_to_checkpoint.ckpt
-``` -->
-
-<!-- This will transcribe the audio file and return the predicted text. -->
-
-<!-- ## Model Architecture
-
-![Deep Speech 2 Architecture](https://velog.velcdn.com/images/pass120/post/5b167fc2-1d24-4b91-8d91-5baef1b6a541/image.png) -->
-
-<!-- ## Results
-
-| Dataset       | WER  | CER  |
-|---------------|------|------|
-| LibriSpeech   | 5.3% | 2.8% | -->
+<!-- | Dataset       | WER  |
+|---------------|------|
+| LibriSpeech   | 5.3% | -->
 
 ## Citations
 
@@ -111,9 +94,6 @@ python inference.py --audio path_to_audio.wav --checkpoint path_to_checkpoint.ck
       title={Deep Speech 2: End-to-End Speech Recognition in English and Mandarin}, 
       author={Dario Amodei and Rishita Anubhai and Eric Battenberg and Carl Case and others,
       year={2015},
-      eprint={1512.02595},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL},
       url={https://arxiv.org/abs/1512.02595}, 
 }
 ```
