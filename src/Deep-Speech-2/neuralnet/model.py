@@ -60,7 +60,7 @@ class SpeechRecognition_minGRUModel(nn.Module):
         self.fully_connected = nn.Linear(n_feats*32, rnn_dim)
         self.birnn_layers = nn.Sequential(*[
             MinGRU(dim=rnn_dim,
-                   expansion_factor=1.0 if i==0 else 2.0,
+                   expansion_factor=1.5,
                    dropout_prob=dropout)
             for i in range(n_rnn_layers)
         ])
@@ -78,23 +78,8 @@ class SpeechRecognition_minGRUModel(nn.Module):
         x = x.view(sizes[0], sizes[1] * sizes[2], sizes[3])  
         x = x.transpose(1, 2)                           
         x = self.fully_connected(x)
-        print(x.shape)
+        # print(x.shape)
         x = self.birnn_layers(x)
-        print(x.shape)
+        # print(x.shape)
         x = self.classifier(x)
         return x
-
-if __name__ == "__main__":
-    x = torch.randn(1, 1, 80, 128)  
-    model2 = SpeechRecognition_minGRUModel(n_cnn_layers=2,
-                                          n_rnn_layers=3,
-                                          rnn_dim=512, 
-                                          n_class=29, 
-                                          n_feats=80, 
-                                          stride=2, 
-                                          dropout=0.1)
-    print(model2)
-    out2 = model2(x)
-
-    print("Output 2:", out2)
-    print(out2.shape)

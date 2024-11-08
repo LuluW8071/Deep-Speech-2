@@ -3,22 +3,22 @@ import torchaudio
 import torch
 import torch.nn as nn
 import torchaudio.transforms as transforms
-import numpy as np
+
 from torch.utils.data import DataLoader, Dataset
 from utils import TextTransform
 
 class LogMelSpec(nn.Module):
-    def __init__(self, sample_rate=16000, n_mels=80, hop_length=160):
+    def __init__(self, sample_rate=16000, n_mels=128, hop_length=160):
         super(LogMelSpec, self).__init__()
-        self.transform = transforms.MelSpectrogram(sample_rate=sample_rate, 
-                                                   n_mels=n_mels,
-                                                   hop_length=hop_length)
+        self.transform = transforms.MelSpectrogram(sample_rate=sample_rate,
+                     n_mels=n_mels,
+                     hop_length=hop_length)
 
     def forward(self, x):
         return self.transform(x)
 
 
-def get_featurizer(sample_rate=16000, n_mels=80, hop_length=160):
+def get_featurizer(sample_rate=16000, n_mels=128, hop_length=160):
     return LogMelSpec(sample_rate=sample_rate, 
                       n_mels=n_mels,
                       hop_length=hop_length)

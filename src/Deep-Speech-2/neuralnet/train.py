@@ -36,7 +36,7 @@ class ASRTrainer(pl.LightningModule):
         self.sync_dist = True if args.gpus > 1 else False
 
         # Save the hyperparams of checkpoint
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=["model"])
 
     def forward(self, x, hidden):
         return self.model(x, hidden)
@@ -51,8 +51,8 @@ class ASRTrainer(pl.LightningModule):
             'scheduler': optim.lr_scheduler.CosineAnnealingWarmRestarts(
                 optimizer,
                 T_0=10,          # Number of epochs for the first restart
-                T_mult=2,        # Factor to increase T_0 after each restart
-                eta_min=3e-5     # Minimum learning rate
+                T_mult=1,        # Factor to increase T_0 after each restart
+                eta_min=5e-5     # Minimum learning rate
             ),
             'monitor': 'val_loss'
         }
@@ -88,10 +88,10 @@ class ASRTrainer(pl.LightningModule):
             self.logger.experiment.log_text(text=log_targets, metadata=log_preds)
 
         # Calculate metrics
-        # cer_batch = self.char_error_rate(decoded_preds, decoded_targets)
+        cer_batch = self.char_error_rate(decoded_preds, decoded_targets)
         wer_batch = self.word_error_rate(decoded_preds, decoded_targets)
         
-        # self.val_cer.append(cer_batch)
+        self.val_cer.append(cer_batch)
         self.val_wer.append(wer_batch)
 
         return {'val_loss': loss}
@@ -100,13 +100,13 @@ class ASRTrainer(pl.LightningModule):
     def on_validation_epoch_end(self):
         # Calculate averages of metrics over the entire epoch
         avg_loss = torch.stack(self.losses).mean()
-        # avg_cer = torch.stack(self.val_cer).mean()
+        avg_cer = torch.stack(self.val_cer).mean()
         avg_wer = torch.stack(self.val_wer).mean()
 
         # Log all metrics using log_dict
         metrics = {
             'val_loss': avg_loss,
-            # 'val_cer': avg_cer,
+            'val_cer': avg_cer,
             'val_wer': avg_wer
         }
 
@@ -115,7 +115,7 @@ class ASRTrainer(pl.LightningModule):
         # Clear the lists for the next epoch
         self.losses.clear()
         self.val_wer.clear()
-        # self.val_cer.clear()
+        self.val_cer.clear()
 
 
 def main(args):
@@ -144,14 +144,16 @@ def main(args):
         "n_rnn_layers": 3,
         "rnn_dim": 512,
         "n_class": 29,
-        "n_feats": 80,
+        "n_feats": 128,
         "stride": 2,
-        "dropout": 0.1,
+        "dropout": 0.2,
     } 
     
-    model = SpeechRecognitionModel(**h_params) if args.model_type.lower() == "gru" else SpeechRecognition_minGRUModel(**h_params)
+    model_type = args.model_type.lower()
+    model =SpeechRecognitionModel(**h_params) if model_type == "gru" else SpeechRecognition_minGRUModel(**h_params)
+    compiled_model = torch.compile(model)
 
-    speech_trainer = ASRTrainer(model=model, 
+    speech_trainer = ASRTrainer(model=compiled_model, 
                                 args=args)
 
     # NOTE: Comet Logger
@@ -204,10 +206,10 @@ if __name__ == "__main__":
                         help='which distributed backend to use for aggregating multi-gpu train')
 
     # General Train Hyperparameters
-    parser.add_argument('--model_type', default=None, type=str, help='model type: gru or mingru')
+    parser.add_argument('--model_type', default="gru", type=str, help='model type: gru or mingru')
     parser.add_argument('--epochs', default=50, type=int, help='number of total epochs to run')
     parser.add_argument('--batch_size', default=32, type=int, help='size of batch')
-    parser.add_argument('-lr', '--learning_rate', default=1e-5, type=float, help='learning rate')
+    parser.add_argument('-lr', '--learning_rate', default=2e-4, type=float, help='learning rate')
     parser.add_argument('--precision', default='16-mixed', type=str, help='precision')
 
     # Checkpoint path
