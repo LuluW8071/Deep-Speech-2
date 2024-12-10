@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from dataset import SpeechDataModule
-from model import SpeechRecognitionModel, SpeechRecognition_minGRUModel
+from model import SpeechRecognitionModel
 from utils import GreedyDecoder
 
 
@@ -28,7 +28,7 @@ class ASRTrainer(pl.LightningModule):
         # Metrics
         self.losses = []
         self.val_wer, self.val_cer = [], []
-        self.char_error_rate = CharErrorRate()
+        # self.char_error_rate = CharErrorRate()
         self.word_error_rate = WordErrorRate()
         self.loss_fn = nn.CTCLoss(blank=28, zero_infinity=True)
         
@@ -52,7 +52,7 @@ class ASRTrainer(pl.LightningModule):
                 optimizer,
                 T_0=10,          # Number of epochs for the first restart
                 T_mult=1,        # Factor to increase T_0 after each restart
-                eta_min=5e-5     # Minimum learning rate
+                eta_min=1e-5     # Minimum learning rate
             ),
             'monitor': 'val_loss'
         }
@@ -82,16 +82,16 @@ class ASRTrainer(pl.LightningModule):
         decoded_preds, decoded_targets = GreedyDecoder(y_pred.transpose(0, 1), labels, label_lengths)
         
         # Log final predictions
-        if batch_idx % 15 == 0:
+        if batch_idx % 900 == 0:
             log_targets = decoded_targets[-1]
             log_preds = {"Preds": decoded_preds[-1]}
             self.logger.experiment.log_text(text=log_targets, metadata=log_preds)
 
         # Calculate metrics
-        cer_batch = self.char_error_rate(decoded_preds, decoded_targets)
+        # cer_batch = self.char_error_rate(decoded_preds, decoded_targets)
         wer_batch = self.word_error_rate(decoded_preds, decoded_targets)
         
-        self.val_cer.append(cer_batch)
+        # self.val_cer.append(cer_batch)
         self.val_wer.append(wer_batch)
 
         return {'val_loss': loss}
@@ -100,13 +100,13 @@ class ASRTrainer(pl.LightningModule):
     def on_validation_epoch_end(self):
         # Calculate averages of metrics over the entire epoch
         avg_loss = torch.stack(self.losses).mean()
-        avg_cer = torch.stack(self.val_cer).mean()
+        # avg_cer = torch.stack(self.val_cer).mean()
         avg_wer = torch.stack(self.val_wer).mean()
 
         # Log all metrics using log_dict
         metrics = {
             'val_loss': avg_loss,
-            'val_cer': avg_cer,
+            # 'val_cer': avg_cer,
             'val_wer': avg_wer
         }
 
@@ -115,27 +115,16 @@ class ASRTrainer(pl.LightningModule):
         # Clear the lists for the next epoch
         self.losses.clear()
         self.val_wer.clear()
-        self.val_cer.clear()
+        # self.val_cer.clear()
 
 
 def main(args):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    
-    directory = "data"
-    if not os.path.exists(directory):
-        os.makedirs(directory)
         
     # Prepare dataset
     data_module = SpeechDataModule(batch_size=args.batch_size,
-                                   train_url=[
-                                    "train-clean-100", 
-                                    "train-clean-360", 
-                                    "train-other-500",
-                                   ],
-                                   test_url=[
-                                    "test-clean", 
-                                    "test-other",
-                                   ],
+                                   train_json=args.train_json,
+                                   test_json=args.valid_json, 
                                    num_workers=args.num_workers)
     data_module.setup()
 
@@ -146,11 +135,10 @@ def main(args):
         "n_class": 29,
         "n_feats": 128,
         "stride": 2,
-        "dropout": 0.2,
+        "dropout": 0.1,
     } 
     
-    model_type = args.model_type.lower()
-    model =SpeechRecognitionModel(**h_params) if model_type == "gru" else SpeechRecognition_minGRUModel(**h_params)
+    model = SpeechRecognitionModel(**h_params)
     compiled_model = torch.compile(model)
 
     speech_trainer = ASRTrainer(model=compiled_model, 
@@ -158,7 +146,8 @@ def main(args):
 
     # NOTE: Comet Logger
     comet_logger = CometLogger(api_key=os.getenv('API_KEY'),
-                               project_name=os.getenv('PROJECT_NAME'))
+                               project_name=os.getenv('PROJECT_NAME'),
+                               experiment_key="cf2f3ab4f6014dccacf0feefa7f3d514")
 
     # NOTE: Define Trainer callbacks
     checkpoint_callback = ModelCheckpoint(
@@ -205,9 +194,12 @@ if __name__ == "__main__":
     parser.add_argument('-db', '--dist_backend', default='ddp_find_unused_parameters_true', type=str,
                         help='which distributed backend to use for aggregating multi-gpu train')
 
+    # Train and Valid File
+    parser.add_argument('--train_json', default=None, required=True, type=str, help='json file to load training data')                   
+    parser.add_argument('--valid_json', default=None, required=True, type=str, help='json file to load testing data')
+
     # General Train Hyperparameters
-    parser.add_argument('--model_type', default="gru", type=str, help='model type: gru or mingru')
-    parser.add_argument('--epochs', default=50, type=int, help='number of total epochs to run')
+    parser.add_argument('--epochs', default=30, type=int, help='number of total epochs to run')
     parser.add_argument('--batch_size', default=32, type=int, help='size of batch')
     parser.add_argument('-lr', '--learning_rate', default=2e-4, type=float, help='learning rate')
     parser.add_argument('--precision', default='16-mixed', type=str, help='precision')
