@@ -6,22 +6,14 @@
 
 </div>
 
-This repository contains an implementation of the paper __Deep Speech 2: End-to-End Speech Recognition__ and newly proposed __parallel minGRU__ architecture from __Were RNNs All We Needed?__ using __PyTorch :fire:__ and __Lightning AI :zap:__. 
+This repository contains an implementation of the paper __Deep Speech 2: End-to-End Speech Recognition__, a state-of-the-art ASR model designed to transcribe speech into text with end-to-end training using deep learning techniques in 2015. using __Lightning AI :zap:__. 
 
 ## 📜 Paper & Blogs Review 
 
 - [x] [Gated Recurrent Neural Networks](https://arxiv.org/pdf/1412.3555)
 - [x] [Deep Speech 2: End-to-End Speech Recognition](https://arxiv.org/abs/1512.02595)
-- [x] [Were RNNs All We Needed?](https://arxiv.org/pdf/2410.01201)
 - [x] [KenLM](https://kheafield.com/code/kenlm/)
 - [x] [Boosting Sequence Generation Performance with Beam Search Language Model Decoding](https://towardsdatascience.com/boosting-your-sequence-generation-performance-with-beam-search-language-model-decoding-74ee64de435a)
-
-
-## 📖 Introduction
-
-__Deep Speech 2__ was a state-of-the-art ASR model designed to transcribe speech into text with end-to-end training using deep learning techniques in 2015.
-
-On the other hand, **Were RNNs All We Needed?** introduces a new RNN-based architecture with a __parallelized version__ of the __minGRU__ (Minimum Gated Recurrent Unit), aiming to enhance the efficiency of RNNs by reducing the dependency on sequential data processing. This architecture enables faster training and inference, making it potentially more suitable for ASR tasks and other real-time applications.
 
 --- 
 
@@ -58,32 +50,43 @@ Customize the pytorch training parameters by passing arguments in `train.py` to 
 Refer to the provided table to change hyperparameters and train configurations.
 | Args                   | Description                                                           | Default Value      |
 |------------------------|-----------------------------------------------------------------------|--------------------|
-| `-g, --gpus`           | Number of GPUs per node                                               | 1  |
-| `-g, --num_workers`           | Number of CPU workers                                               | 8  |
-| `-db, --dist_backend`           | Distributed backend to use for training                             | ddp_find_unused_parameters_true  |
-| `--epochs`             | Number of total epochs to run                                         | 50                 |
-| `--batch_size`         | Size of the batch                                                     | 32                |
-| `-lr, --learning_rate`      | Learning rate                                                         | 2e-4  (0.0002)      | 
-| `--checkpoint_path` | Checkpoint path to resume training from                                 | None |
-| `--precision`        | Precision of the training                                              | 16-mixed |
+| `-d, --device`         | Device to use for training                                            | `cuda`             |
+| `-g, --gpus`           | Number of GPUs per node                                               | `1`                |
+| `-w, --num_workers`    | Number of CPU workers for data loading                                | `8`                |
+| `-db, --dist_backend`  | Distributed backend to use for aggregating multi-GPU training         | `ddp`              |
+| `--train_json`         | JSON file to load training data                                       | `None` (Required)  |
+| `--valid_json`         | JSON file to load validation data                                     | `None` (Required)  |
+| `--epochs`             | Number of total epochs to run                                         | `50`               |
+| `--batch_size`         | Size of the batch                                                     | `64`               |
+| `-lr, --learning_rate` | Learning rate                                                         | `5e-5`             |
+| `--precision`          | Precision for mixed precision training                                | `16-mixed`         |
+| `--checkpoint_path`    | Path of checkpoint file to resume training                            | `None`             |
+| `-gc, --grad_clip`     | Gradient norm clipping value                                          | `0.5`              |
+| `-ag, --accumulate_grad` | Number of batches to accumulate gradients over                     | `4`                |
+
 
 
 ```bash
-python3 train.py 
--g 4                   # Number of GPUs per node for parallel gpu training
--w 8                   # Number of CPU workers for parallel data loading
---epochs 10            # Number of total epochs to run
---batch_size 64        # Size of the batch
--lr 2e-5               # Learning rate
---precision 16-mixed   # Precision of the training
---checkpoint_path path_to_checkpoint.ckpt    # Checkpoint path to resume training from
+python3 train.py \
+-d cuda \                        # Device to use for training (e.g., 'cuda' for GPU, 'cpu' for CPU)
+-g 2 \                           # Number of GPUs per node for parallel GPU training
+-w 4 \                           # Number of CPU workers for parallel data loading
+--epochs 50 \                    # Number of total epochs to run
+--batch_size 32 \                # Size of each training batch
+-lr 2e-4 \                       # Learning rate for optimization
+--precision 16-mixed \           # Precision of the training (e.g., '16-mixed' for mixed precision training)
+--train_json path_to_training_data.json \   # Path to the training data JSON file
+--valid_json path_to_validation_data.json \ # Path to the validation data JSON file
+--checkpoint_path path_to_checkpoint.ckpt \ # Path to a checkpoint file to resume training
+-gc 1 \                        # Gradient norm clipping value to prevent exploding gradients
+-ag 4                            # Number of batches to accumulate gradients over
 ```
 
-## Results
+## Experiment Results
 
-The model was trained on __LibriSpeech__ train set (100 + 360 + 500 hours) and validated on the __LibriSpeech__ test set ( ~ 10.5 hours).
+<!-- The model was trained on __LibriSpeech__ train set (100 + 360 + 500 hours) and validated on the __LibriSpeech__ test set ( ~ 10.5 hours).
 
-<!-- | Dataset       | WER  |
+| Dataset       | WER  |
 |---------------|------|
 | LibriSpeech   | 5.3% | -->
 
@@ -97,13 +100,3 @@ The model was trained on __LibriSpeech__ train set (100 + 360 + 500 hours) and v
       url={https://arxiv.org/abs/1512.02595}, 
 }
 ```
-
-```bibtex
-@inproceedings{Feng2024WereRA,
-    title   = {Were RNNs All We Needed?},
-    author  = {Leo Feng and Frederick Tung and Mohamed Osama Ahmed and Yoshua Bengio and Hossein Hajimirsadegh},
-    year    = {2024},
-    url     = {https://api.semanticscholar.org/CorpusID:273025630}
-}
-```
-

@@ -9,3 +9,4 @@ numpy
 torchmetrics
 comet_ml
 python-dotenv
+soundfile
