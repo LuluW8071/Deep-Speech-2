@@ -1,4 +1,4 @@
-## Deep Speech 2 with Parallel MinGRU Implementation
+## Deep Speech 2
 
 <div align="center">
 
