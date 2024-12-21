@@ -1,3 +1,0 @@
-[submodule "src/Deep-Speech-2/submodules"]
-	path = src/Deep-Speech-2/submodules
-	url = https://github.com/WayenVan/ctcdecode.git

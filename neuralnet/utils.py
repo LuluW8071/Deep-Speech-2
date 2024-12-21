@@ -1,40 +1,10 @@
 import torch
 
-
 class TextTransform:
     """Maps characters to integers and vice versa with optimized processing"""
 
     def __init__(self):
-        base_map = """
-        ' 0\n
-        <SPACE> 1\n
-        a 2\n
-        b 3\n
-        c 4\n
-        d 5\n
-        e 6\n
-        f 7\n
-        g 8\n
-        h 9\n
-        i 10\n
-        j 11\n
-        k 12\n
-        l 13\n
-        m 14\n
-        n 15\n
-        o 16\n
-        p 17\n
-        q 18\n
-        r 19\n
-        s 20\n
-        t 21\n
-        u 22\n
-        v 23\n
-        w 24\n
-        x 25\n
-        y 26\n
-        z 27
-        """
+        base_map = """' 0\n<SPACE> 1\na 2\nb 3\nc 4\nd 5\ne 6\nf 7\ng 8\nh 9\ni 10\nj 11\nk 12\nl 13\nm 14\nn 15\no 16\np 17\nq 18\nr 19\ns 20\nt 21\nu 22\nv 23\nw 24\nx 25\ny 26\nz 27"""
 
         # Pre-compute char_map and index_map using dictionary comprehensions
         self.char_map = {
@@ -113,7 +83,7 @@ class TextTransform:
         return "".join(self.index_map[i] for i in labels).replace("<SPACE>", " ")
 
 
-def GreedyDecoder(output, labels, label_lengths, blank_label=28, collapse_repeated=True):
+def GreedyDecoder(output, labels, label_lengths, blank_label = 28, collapse_repeated= True):
     """Optimized greedy decoder"""
     arg_maxes = torch.argmax(output, dim=2)
     decodes = []

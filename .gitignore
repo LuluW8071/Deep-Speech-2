@@ -14,3 +14,4 @@ data
 # Checkpoints
 saved_checkpoint
 freezed
+optimized_model.pt
