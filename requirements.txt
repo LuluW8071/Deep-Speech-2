@@ -2,11 +2,10 @@ torch
 torchaudio
 torchvision
 lightning
-pyaudio
+# pyaudio
 librosa
 matplotlib
 numpy
 torchmetrics
 comet_ml
 python-dotenv
-soundfile

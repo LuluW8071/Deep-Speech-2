@@ -3,24 +3,16 @@ import torchaudio
 import argparse
 import gradio as gr
 
-from torchaudio.transforms import Resample
 from torchaudio.models.decoder import download_pretrained_files, ctc_decoder
 
 from neuralnet.dataset import get_featurizer
 
-
-# Constants for decoding
-LM_WEIGHT = 3.23
-WORD_SCORE = -0.26
-
-def preprocess_audio(audio_file, featurizer, target_sample_rate=16000):
+def preprocess_audio(audio_file, featurizer):
     """
     Preprocess the audio: load, resample, and extract features.
     """
     try:
-        waveform, sample_rate = torchaudio.load(audio_file)
-        if sample_rate != target_sample_rate:
-            waveform = Resample(orig_freq=sample_rate, new_freq=target_sample_rate)(waveform)
+        waveform, _ = torchaudio.load(audio_file)
         return featurizer(waveform).unsqueeze(1)
     except Exception as e:
         raise ValueError(f"Error in preprocessing audio: {e}")
@@ -35,11 +27,11 @@ def decode_emission(emission, tokens, files):
             lexicon=files.lexicon,
             tokens=tokens,
             lm=files.lm,
-            nbest=5,
-            beam_size=50,
+            nbest=1,
+            beam_size=25,
             beam_threshold=10,
-            lm_weight=LM_WEIGHT,
-            word_score=WORD_SCORE,
+            lm_weight=0.3,
+            word_score=-0.26,
         )
         beam_search_result = beam_search_decoder(emission)
         return " ".join(beam_search_result[0][0].words).strip()
