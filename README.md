@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Code in Progress](https://img.shields.io/badge/status-in_progress-yellow.svg) ![License](https://img.shields.io/github/license/LuluW8071/Deep-Speech-2) ![Open Issues](https://img.shields.io/github/issues/LuluW8071/Deep-Speech-2) ![Closed Issues](https://img.shields.io/github/issues-closed/LuluW8071/Deep-Speech-2) ![Open PRs](https://img.shields.io/github/issues-pr/LuluW8071/Deep-Speech-2) ![Repo Size](https://img.shields.io/github/repo-size/LuluW8071/Deep-Speech-2) ![Last Commit](https://img.shields.io/github/last-commit/LuluW8071/Deep-Speech-2)
+![Code in Progress](https://img.shields.io/badge/status-completed-green.svg) ![License](https://img.shields.io/github/license/LuluW8071/Deep-Speech-2) ![Open Issues](https://img.shields.io/github/issues/LuluW8071/Deep-Speech-2) ![Closed Issues](https://img.shields.io/github/issues-closed/LuluW8071/Deep-Speech-2) ![Open PRs](https://img.shields.io/github/issues-pr/LuluW8071/Deep-Speech-2) ![Repo Size](https://img.shields.io/github/repo-size/LuluW8071/Deep-Speech-2) ![Last Commit](https://img.shields.io/github/last-commit/LuluW8071/Deep-Speech-2)
 
 </div>
 
@@ -21,8 +21,8 @@ This repository contains an implementation of the paper __Deep Speech 2: End-to-
 
 1. Clone the repository:
    ```bash
-   git clone --recursive https://github.com/LuluW8071/Deep-Speech-2.git
-   cd deep-speech-2
+   git clone https://github.com/LuluW8071/Deep-Speech-2.git
+   cd neuralnet
    ```
 
 2. Install **[Pytorch](https://pytorch.org/)** and  required dependencies:
@@ -48,47 +48,46 @@ python3 train.py
 Customize the pytorch training parameters by passing arguments in `train.py` to suit your needs:
 
 Refer to the provided table to change hyperparameters and train configurations.
-| Args                   | Description                                                           | Default Value      |
-|------------------------|-----------------------------------------------------------------------|--------------------|
-| `-d, --device`         | Device to use for training                                            | `cuda`             |
-| `-g, --gpus`           | Number of GPUs per node                                               | `1`                |
-| `-w, --num_workers`    | Number of CPU workers for data loading                                | `8`                |
-| `-db, --dist_backend`  | Distributed backend to use for aggregating multi-GPU training         | `ddp`              |
-| `--train_json`         | JSON file to load training data                                       | `None` (Required)  |
-| `--valid_json`         | JSON file to load validation data                                     | `None` (Required)  |
-| `--epochs`             | Number of total epochs to run                                         | `50`               |
-| `--batch_size`         | Size of the batch                                                     | `64`               |
-| `-lr, --learning_rate` | Learning rate                                                         | `5e-5`             |
-| `--precision`          | Precision for mixed precision training                                | `16-mixed`         |
-| `--checkpoint_path`    | Path of checkpoint file to resume training                            | `None`             |
-| `-gc, --grad_clip`     | Gradient norm clipping value                                          | `0.5`              |
-| `-ag, --accumulate_grad` | Number of batches to accumulate gradients over                     | `4`                |
+| Args                  | Description                                                           | Default Value                 |
+|-----------------------|-----------------------------------------------------------------------|-------------------------------|
+| `-g`, `--gpus`       | Number of GPUs per node                                              | `1`                           |
+| `-w`, `--num_workers` | Number of data loading workers (`0` means main process only)        | `4`                           |
+| `-db`, `--dist_backend` | Distributed backend for multi-GPU training                        | `'ddp_find_unused_parameters_true'` |
+| `-m`, `--model_type`  | Type of RNN model (`lstm` or `gru`)                                 | `'lstm'`                      |
+| `-cl`, `--resnet_layers` | Number of residual CNN layers                                   | `2`                           |
+| `-nl`, `--rnn_layers` | Number of RNN layers                                               | `3`                           |
+| `-rd`, `--rnn_dim`    | RNN dimension                                                      | `512`                         |
+| `--epochs`           | Total number of training epochs                                    | `50`                          |
+| `--batch_size`       | Batch size                                                         | `32`                          |
+| `-gc`, `--grad_clip` | Gradient clipping                                                 | `0.6`                         |
+| `-lr`, `--learning_rate` | Learning rate                                                | `2e-4`                        |
+| `--precision`        | Precision mode                                                    | `'16-mixed'`                  |
+| `--checkpoint_path`  | Path to a checkpoint file for resuming training                   | `None`                        |
 
-
-
-```bash
-python3 train.py \
--d cuda \                        # Device to use for training (e.g., 'cuda' for GPU, 'cpu' for CPU)
--g 2 \                           # Number of GPUs per node for parallel GPU training
--w 4 \                           # Number of CPU workers for parallel data loading
---epochs 50 \                    # Number of total epochs to run
---batch_size 32 \                # Size of each training batch
--lr 2e-4 \                       # Learning rate for optimization
---precision 16-mixed \           # Precision of the training (e.g., '16-mixed' for mixed precision training)
---train_json path_to_training_data.json \   # Path to the training data JSON file
---valid_json path_to_validation_data.json \ # Path to the validation data JSON file
---checkpoint_path path_to_checkpoint.ckpt \ # Path to a checkpoint file to resume training
--gc 1 \                        # Gradient norm clipping value to prevent exploding gradients
--ag 4                            # Number of batches to accumulate gradients over
-```
 
 ## Experiment Results
 
-<!-- The model was trained on __LibriSpeech__ train set (100 + 360 + 500 hours) and validated on the __LibriSpeech__ test set ( ~ 10.5 hours).
+The model was trained on __LibriSpeech train set__ (100 + 360 + 500 hours) and validated on the __LibriSpeech test set__ ( ~ 10.5 hours) with __16-mixed__ precision. 
 
-| Dataset       | WER  |
-|---------------|------|
-| LibriSpeech   | 5.3% | -->
+| Model Type | ResCNN Layers | RNN Layers | RNN Dim | Epochs | Batch Size | Grad Clip | LR |
+|------------|---------------|------------|---------|--------|------------|-----------|----|
+| BiLSTM     | 2             | 3          | 512     | 25     | 64         | 0.6       | 2e-4 |
+
+#### Loss Curves
+![Loss Curves](assets/loss_curves.png)
+
+#### WER & CER Metrics
+![Greedy Metrics](assets/greedy_metrics.png)
+
+| Word Score | LM Weight | N-gram LM | Beam Size | Beam Threshold |
+|------------|-----------|-----|------|----------------|
+| -0.26       | 0.3       | 4-gram | 25        | 10             |
+
+![Beam Search Metrics](assets/beam_search_metrics.png)
+
+#### Alignments
+![Alignments](assets/plot_alignments.png)
+
 
 ## Citations
 
