@@ -32,8 +32,9 @@ def main(args):
     checkpoint = torch.load(args.model_checkpoint, map_location=torch.device('cpu'))
     h_params = {
         "n_cnn_layers": 2,      # Residual CNN layer
-        "n_rnn_layers": 3,      # GRU Layer
-        "rnn_dim": 768,         # GRU Hidden Layers
+        "model_type": "lstm",   # RNN Model
+        "n_rnn_layers": 3,      # RNN Layer
+        "rnn_dim": 512,         # RNN Hidden Layers
         "n_class": 29,          # Output classes
         "n_feats": 128,         # Spectrogram: n_mels 
         "stride": 2,            
@@ -44,7 +45,7 @@ def main(args):
     model_state_dict = checkpoint['state_dict']
     new_state_dict = OrderedDict()
     for k, v in model_state_dict.items():
-        name = k.replace("model._orig_mod.", "") # remove `model.`
+        name = k.replace("model.", "") # remove `model.`
         new_state_dict[name] = v
 
     model.load_state_dict(new_state_dict)
