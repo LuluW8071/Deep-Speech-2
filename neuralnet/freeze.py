@@ -32,7 +32,7 @@ def main(args):
     checkpoint = torch.load(args.model_checkpoint, map_location=torch.device('cpu'))
     h_params = {
         "n_cnn_layers": 2,      # Residual CNN layer
-        "model_type": "lstm",   # RNN Model
+        "rnn_type": "lstm",     # RNN Model
         "n_rnn_layers": 3,      # RNN Layer
         "rnn_dim": 512,         # RNN Hidden Layers
         "n_class": 29,          # Output classes
